@@ -1251,7 +1251,6 @@ class BartModelSource0(BartPretrainedModel):
         self.shared = nn.Embedding(vocab_size, config.d_model, padding_idx)
 
         self.encoder = BartEncoder(config, self.shared)
-        self.source_encoder = self.encoder
         self.decoder = BartDecoder(config, self.shared)
 
         # Initialize weights and apply final processing
@@ -1269,7 +1268,7 @@ class BartModelSource0(BartPretrainedModel):
         return self.encoder
 
     def get_source_encoder(self):
-        return self.source_encoder
+        return self.encoder
 
     def get_decoder(self):
         return self.decoder
@@ -1341,7 +1340,7 @@ class BartModelSource0(BartPretrainedModel):
                     output_hidden_states = output_hidden_states,
                     return_dict = return_dict,
                 )
-                source_encoder_outputs = self.source_encoder(
+                source_encoder_outputs = self.encoder(
                     input_ids = source_input_ids,
                     attention_mask = source_attention_mask,
                     head_mask = head_mask,
