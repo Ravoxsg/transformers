@@ -504,7 +504,29 @@ class GenerationMixin:
         model_input_name = model_input_name if model_input_name is not None else self.main_input_name
         encoder_kwargs["return_dict"] = True
         encoder_kwargs[model_input_name] = inputs_tensor
-        model_kwargs["encoder_outputs"]: ModelOutput = encoder(**encoder_kwargs)
+        if encoder_kwargs["input_ids"].shape[1] > 1024:
+            source_encoder = self.get_source_encoder()
+
+            thresh = int(encoder_kwargs["input_ids"].shape[1] / 2)
+            source_ids = encoder_kwargs["input_ids"][:, thresh:]
+            source_mask = encoder_kwargs["attention_mask"][:, thresh:]
+            input_ids = encoder_kwargs["input_ids"][:, :thresh]
+            input_mask = encoder_kwargs["attention_mask"][:, :thresh]
+
+            encoder_kwargs["input_ids"] = input_ids
+            encoder_kwargs["attention_mask"] = input_mask
+            input_outs = encoder(**encoder_kwargs)
+            input_state = input_outs["last_hidden_state"]
+
+            encoder_kwargs["input_ids"] = source_ids
+            encoder_kwargs["attention_mask"] = source_mask
+            source_outs = source_encoder(**encoder_kwargs)
+            source_state = source_outs["last_hidden_state"]
+
+            input_outs["last_hidden_state"] = 0.5 * input_state + 0.5 * source_state
+            model_kwargs["encoder_outputs"]: ModelOutput = input_outs
+        else:
+            model_kwargs["encoder_outputs"]: ModelOutput = encoder(**encoder_kwargs)
 
         return model_kwargs
 
@@ -1093,6 +1115,9 @@ class GenerationMixin:
             model_kwargs = self._prepare_encoder_decoder_kwargs_for_generation(
                 inputs_tensor, model_kwargs, model_input_name
             )
+            if model_kwargs["attention_mask"].shape[1] > 1024:
+                thresh = int(model_kwargs["attention_mask"].shape[1] / 2)
+                model_kwargs["attention_mask"] = model_kwargs["attention_mask"][:, :thresh]
 
         # 4. Prepare `input_ids` which will be used for auto-regressive generation
         if self.config.is_encoder_decoder:
