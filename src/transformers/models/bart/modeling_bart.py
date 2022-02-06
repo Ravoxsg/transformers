@@ -1252,7 +1252,7 @@ class BartModelSource1(BartPretrainedModel):
 
         self.encoder = BartEncoder(config, self.shared)
         self.source_encoder = BartEncoder(config, self.shared)
-        for param in self.source_encoder.parameters():
+        for param in self.source_encoder.paramters():
             param.requires_grad = False
         self.decoder = BartDecoder(config, self.shared)
 
