@@ -2455,7 +2455,7 @@ class BartModelSource3(BartPretrainedModel):
         return self.encoder
 
     def get_source_encoder(self):
-        return self.source_encoder
+        return self.encoder
 
     def get_decoder(self):
         return self.decoder
