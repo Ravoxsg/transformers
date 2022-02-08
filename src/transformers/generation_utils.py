@@ -539,7 +539,10 @@ class GenerationMixin:
             encoder_kwargs["attention_mask"] = input_mask
             encoder_kwargs["source_out"] = source_out
             input_outs = encoder(**encoder_kwargs)
+            # update the model kwargs
             model_kwargs["encoder_outputs"]: ModelOutput = input_outs
+            model_kwargs["source_out"] = source_out
+            model_kwargs["attention_mask"] = input_mask
         else:
             model_kwargs["encoder_outputs"]: ModelOutput = encoder(**encoder_kwargs)
 
@@ -619,6 +622,10 @@ class GenerationMixin:
                 0, expanded_return_idx.to(encoder_outputs.last_hidden_state.device)
             )
             model_kwargs["encoder_outputs"] = encoder_outputs
+            if "source_out" in model_kwargs.keys():
+                model_kwargs["source_out"] = model_kwargs["source_out"].index_select(
+                    0, expanded_return_idx.to( model_kwargs["source_out"].device)
+                )
         return input_ids, model_kwargs
 
     @staticmethod
@@ -1130,9 +1137,6 @@ class GenerationMixin:
             model_kwargs = self._prepare_encoder_decoder_kwargs_for_generation(
                 inputs_tensor, model_kwargs, model_input_name
             )
-            if model_kwargs["attention_mask"].shape[1] > 1024:
-                thresh = int(model_kwargs["attention_mask"].shape[1] / 2)
-                model_kwargs["attention_mask"] = model_kwargs["attention_mask"][:, :thresh]
 
         # 4. Prepare `input_ids` which will be used for auto-regressive generation
         if self.config.is_encoder_decoder:
