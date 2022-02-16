@@ -563,7 +563,7 @@ class GenerationMixin:
             h = fusion_model(h)
             input_outs["last_hidden_state"] = h
             model_kwargs["encoder_outputs"]: ModelOutput = input_outs
-            model_kwargs["attention_mask"]: None
+            model_kwargs["attention_mask"] = input_mask
         else:
             model_kwargs["encoder_outputs"]: ModelOutput = encoder(**encoder_kwargs)
 
