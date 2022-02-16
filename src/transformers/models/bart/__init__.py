@@ -37,6 +37,7 @@ if is_torch_available():
         "BartForConditionalGenerationSource1",
         "BartForConditionalGenerationSource2",
         "BartForConditionalGenerationSource3",
+        "BartForConditionalGenerationSource4",
         "BartForQuestionAnswering",
         "BartForSequenceClassification",
         "BartModel",
@@ -76,6 +77,7 @@ if TYPE_CHECKING:
             BartForConditionalGenerationSource1,
             BartForConditionalGenerationSource2,
             BartForConditionalGenerationSource3,
+            BartForConditionalGenerationSource4,
             BartForQuestionAnswering,
             BartForSequenceClassification,
             BartModel,
@@ -83,6 +85,7 @@ if TYPE_CHECKING:
             BartModelSource1,
             BartModelSource2,
             BartModelSource3,
+            BartModelSource4,
             BartPretrainedModel,
             PretrainedBartModel,
         )
