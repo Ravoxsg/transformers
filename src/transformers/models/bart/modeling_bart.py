@@ -2526,7 +2526,7 @@ class BartModelSource4(BartPretrainedModel):
         self.fusion_model = nn.Sequential(
             nn.Linear(2 * config.d_model, config.d_model)
         )
-        self.decoder = BartDecoderSource(config, self.shared)
+        self.decoder = BartDecoder(config, self.shared)
 
         # Initialize weights and apply final processing
         self.post_init()
