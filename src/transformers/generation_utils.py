@@ -513,36 +513,38 @@ class GenerationMixin:
             input_ids = encoder_kwargs["input_ids"][:, :thresh]
             input_mask = encoder_kwargs["attention_mask"][:, :thresh]
 
-            # ### Source0/1/2
-            # encoder_kwargs["input_ids"] = input_ids
-            # encoder_kwargs["attention_mask"] = input_mask
-            # input_outs = encoder(**encoder_kwargs)
-            # input_state = input_outs["last_hidden_state"]
-            #
-            # encoder_kwargs["input_ids"] = source_ids
-            # encoder_kwargs["attention_mask"] = source_mask
-            # source_outs = source_encoder(**encoder_kwargs)
-            # source_state = source_outs["last_hidden_state"]
-            #
-            # input_outs["last_hidden_state"] = 0.5 * input_state + 0.5 * source_state
-            # model_kwargs["encoder_outputs"]: ModelOutput = input_outs
-
-            ### Source3
-            # encode the source
-            encoder_kwargs["input_ids"] = source_ids
-            encoder_kwargs["attention_mask"] = source_mask
-            encoder_kwargs["source_out"] = None
-            source_outs = source_encoder(**encoder_kwargs)
-            source_out = source_outs["last_hidden_state"]
-            # now encode the candidates
+            ### Source0/1/2
             encoder_kwargs["input_ids"] = input_ids
             encoder_kwargs["attention_mask"] = input_mask
-            encoder_kwargs["source_out"] = source_out
             input_outs = encoder(**encoder_kwargs)
-            # update the model kwargs
+            input_state = input_outs["last_hidden_state"]
+            
+            encoder_kwargs["input_ids"] = source_ids
+            encoder_kwargs["attention_mask"] = source_mask
+            source_outs = source_encoder(**encoder_kwargs)
+            source_state = source_outs["last_hidden_state"]
+           
+            #print(input_state.shape, source_state.shape)
+            input_outs["last_hidden_state"] = 0.5 * input_state + 0.5 * source_state
             model_kwargs["encoder_outputs"]: ModelOutput = input_outs
-            model_kwargs["source_out"] = source_out
             model_kwargs["attention_mask"] = input_mask
+
+            #### Source3
+            ## encode the source
+            #encoder_kwargs["input_ids"] = source_ids
+            #encoder_kwargs["attention_mask"] = source_mask
+            #encoder_kwargs["source_out"] = None
+            #source_outs = source_encoder(**encoder_kwargs)
+            #source_out = source_outs["last_hidden_state"]
+            ## now encode the candidates
+            #encoder_kwargs["input_ids"] = input_ids
+            #encoder_kwargs["attention_mask"] = input_mask
+            #encoder_kwargs["source_out"] = source_out
+            #input_outs = encoder(**encoder_kwargs)
+            # update the model kwargs
+            #model_kwargs["encoder_outputs"]: ModelOutput = input_outs
+            #model_kwargs["source_out"] = source_out
+            #model_kwargs["attention_mask"] = input_mask
         else:
             model_kwargs["encoder_outputs"]: ModelOutput = encoder(**encoder_kwargs)
 
