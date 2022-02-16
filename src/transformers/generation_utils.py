@@ -562,7 +562,8 @@ class GenerationMixin:
             h = torch.cat((input_state, source_state), -1)
             h = fusion_model(h)
             input_outs["last_hidden_state"] = h
-            model_kwargs["encoder_outputs"]: None
+            model_kwargs["encoder_outputs"]: ModelOutput = input_outs
+            model_kwargs["attention_mask"]: None
         else:
             model_kwargs["encoder_outputs"]: ModelOutput = encoder(**encoder_kwargs)
 
