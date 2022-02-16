@@ -3749,7 +3749,6 @@ class BartForConditionalGenerationSource4(BartPretrainedModel):
         self,
         input_ids=None,
         attention_mask=None,
-        source_out=None,
         decoder_input_ids=None,
         decoder_attention_mask=None,
         head_mask=None,
@@ -3784,7 +3783,6 @@ class BartForConditionalGenerationSource4(BartPretrainedModel):
         outputs = self.model(
             input_ids,
             attention_mask=attention_mask,
-            source_out=source_out,
             decoder_input_ids=decoder_input_ids,
             encoder_outputs=encoder_outputs,
             decoder_attention_mask=decoder_attention_mask,
@@ -3825,7 +3823,6 @@ class BartForConditionalGenerationSource4(BartPretrainedModel):
     def prepare_inputs_for_generation(
         self,
         decoder_input_ids,
-        source_out=None,
         past=None,
         attention_mask=None,
         head_mask=None,
@@ -3841,7 +3838,6 @@ class BartForConditionalGenerationSource4(BartPretrainedModel):
 
         return {
             "input_ids": None,  # encoder_outputs is defined. input_ids not needed
-            "source_out": source_out,
             "encoder_outputs": encoder_outputs,
             "past_key_values": past,
             "decoder_input_ids": decoder_input_ids,
