@@ -513,21 +513,35 @@ class GenerationMixin:
             input_ids = encoder_kwargs["input_ids"][:, :thresh]
             input_mask = encoder_kwargs["attention_mask"][:, :thresh]
 
-            # ### Source0/1/2
-            # # encode the source
-            # encoder_kwargs["input_ids"] = source_ids
-            # encoder_kwargs["attention_mask"] = source_mask
-            # source_outs = source_encoder(**encoder_kwargs)
-            # source_state = source_outs["last_hidden_state"]
-            # # encode the candidates
-            # encoder_kwargs["input_ids"] = input_ids
-            # encoder_kwargs["attention_mask"] = input_mask
-            # input_outs = encoder(**encoder_kwargs)
-            # input_state = input_outs["last_hidden_state"]
-            # # average the encoder outputs
-            # input_outs["last_hidden_state"] = 0.5 * input_state + 0.5 * source_state
-            # model_kwargs["encoder_outputs"]: ModelOutput = input_outs
-            # model_kwargs["attention_mask"] = input_mask
+            ### Source0/1/2
+            # encode the source
+            encoder_kwargs["input_ids"] = source_ids
+            encoder_kwargs["attention_mask"] = source_mask
+            source_outs = source_encoder(**encoder_kwargs)
+            source_state = source_outs["last_hidden_state"]
+            # encode the candidates
+            encoder_kwargs["input_ids"] = input_ids
+            encoder_kwargs["attention_mask"] = input_mask
+            input_outs = encoder(**encoder_kwargs)
+            input_state = input_outs["last_hidden_state"]
+            # average the encoder outputs
+            # state method A
+            input_outs["last_hidden_state"] = 0.5 * input_state + 0.5 * source_state
+            # state method B
+            #repeated_input_mask = input_mask.unsqueeze(2).repeat(1, 1, input_state.shape[2])
+            #repeated_source_mask = source_mask.unsqueeze(2).repeat(1, 1, source_state.shape[2])
+            #weights = repeated_input_mask + repeated_source_mask
+            #weights[weights == 0] = 1
+            #input_outs["last_hidden_state"] = (repeated_input_mask * input_state + repeated_source_mask * source_state) / weights
+            model_kwargs["encoder_outputs"]: ModelOutput = input_outs
+            # attention method A
+            #model_kwargs["attention_mask"] = input_mask
+            # attention method B
+            #model_kwargs["attention_mask"] = None
+            # attention method C
+            weights = input_mask + source_mask
+            weights[weights > 1] = 1
+            model_kwargs["attention_mask"] = weights 
 
             #### Source3
             ## encode the source
@@ -546,24 +560,25 @@ class GenerationMixin:
             #model_kwargs["source_out"] = source_out
             #model_kwargs["attention_mask"] = input_mask
 
-            # Source4
-            fusion_model = self.get_fusion_model()
-            # encode the source
-            encoder_kwargs["input_ids"] = source_ids
-            encoder_kwargs["attention_mask"] = source_mask
-            source_outs = source_encoder(**encoder_kwargs)
-            source_state = source_outs["last_hidden_state"]
-            # encode the candidates
-            encoder_kwargs["input_ids"] = input_ids
-            encoder_kwargs["attention_mask"] = input_mask
-            input_outs = encoder(**encoder_kwargs)
-            input_state = input_outs["last_hidden_state"]
-            # average the encoder outputs
-            h = torch.cat((input_state, source_state), -1)
-            h = fusion_model(h)
-            input_outs["last_hidden_state"] = h
-            model_kwargs["encoder_outputs"]: ModelOutput = input_outs
-            model_kwargs["attention_mask"] = input_mask
+            ## Source4
+            #fusion_model = self.get_fusion_model()
+            ## encode the source
+            #encoder_kwargs["input_ids"] = source_ids
+            #encoder_kwargs["attention_mask"] = source_mask
+            #source_outs = source_encoder(**encoder_kwargs)
+            #source_state = source_outs["last_hidden_state"]
+            ## encode the candidates
+            #encoder_kwargs["input_ids"] = input_ids
+            #encoder_kwargs["attention_mask"] = input_mask
+            #input_outs = encoder(**encoder_kwargs)
+            #input_state = input_outs["last_hidden_state"]
+            ## average the encoder outputs
+            #h = torch.cat((input_state, source_state), -1)
+            #h = fusion_model(h)
+            #input_outs["last_hidden_state"] = h
+            #model_kwargs["encoder_outputs"]: ModelOutput = input_outs
+            #model_kwargs["attention_mask"] = input_mask
+            ##model_kwargs["attention_mask"] = None
         else:
             model_kwargs["encoder_outputs"]: ModelOutput = encoder(**encoder_kwargs)
 

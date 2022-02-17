@@ -1959,7 +1959,8 @@ class BartModelSource0(BartPretrainedModel):
                 source_input_ids = input_ids[:, thresh:]
                 source_attention_mask = attention_mask[:, thresh:]
                 input_ids = input_ids[:, :thresh]
-                attention_mask = attention_mask[:, :thresh]
+                #attention_mask = attention_mask[:, :thresh]
+                attention_mask = None
 
         # different to other models, Bart automatically creates decoder_input_ids from
         # input_ids if no decoder_input_ids are provided
@@ -2585,6 +2586,7 @@ class BartModelSource4(BartPretrainedModel):
                 source_attention_mask = attention_mask[:, thresh:]
                 input_ids = input_ids[:, :thresh]
                 attention_mask = attention_mask[:, :thresh]
+                #attention_mask = None
 
         # different to other models, Bart automatically creates decoder_input_ids from
         # input_ids if no decoder_input_ids are provided
@@ -2608,8 +2610,7 @@ class BartModelSource4(BartPretrainedModel):
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         if encoder_outputs is None:
-            if source_input_ids != None:
-                encoder_outputs = self.encoder(
+            encoder_outputs = self.encoder(
                     input_ids = input_ids,
                     attention_mask = attention_mask,
                     head_mask = head_mask,
@@ -2617,8 +2618,8 @@ class BartModelSource4(BartPretrainedModel):
                     output_attentions = output_attentions,
                     output_hidden_states = output_hidden_states,
                     return_dict = return_dict,
-                )
-                source_encoder_outputs = self.encoder(
+            )
+            source_encoder_outputs = self.encoder(
                     input_ids = source_input_ids,
                     attention_mask = source_attention_mask,
                     head_mask = head_mask,
@@ -2626,21 +2627,10 @@ class BartModelSource4(BartPretrainedModel):
                     output_attentions = output_attentions,
                     output_hidden_states = output_hidden_states,
                     return_dict = return_dict,
-                )
-                #print("here")
-                h = torch.cat((encoder_outputs["last_hidden_state"], source_encoder_outputs["last_hidden_state"]), -1)
-                h = self.fusion_model(h)
-                encoder_outputs["last_hidden_state"] = h
-            else:
-                encoder_outputs = self.encoder(
-                    input_ids=input_ids,
-                    attention_mask=attention_mask,
-                    head_mask=head_mask,
-                    inputs_embeds=inputs_embeds,
-                    output_attentions=output_attentions,
-                    output_hidden_states=output_hidden_states,
-                    return_dict=return_dict,
-                )
+            )
+            h = torch.cat((encoder_outputs["last_hidden_state"], source_encoder_outputs["last_hidden_state"]), -1)
+            h = self.fusion_model(h)
+            encoder_outputs["last_hidden_state"] = h
         # If the user passed a tuple for encoder_outputs, we wrap it in a BaseModelOutput when return_dict=True
         elif return_dict and not isinstance(encoder_outputs, BaseModelOutput):
             encoder_outputs = BaseModelOutput(
