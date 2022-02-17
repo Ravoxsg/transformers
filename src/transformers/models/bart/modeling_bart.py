@@ -1959,8 +1959,14 @@ class BartModelSource0(BartPretrainedModel):
                 source_input_ids = input_ids[:, thresh:]
                 source_attention_mask = attention_mask[:, thresh:]
                 input_ids = input_ids[:, :thresh]
+                # attention method A
                 #attention_mask = attention_mask[:, :thresh]
-                attention_mask = None
+                # attention method B
+                #attention_mask = None
+                # attention method C
+                weights = attention_mask[:, :thresh] + source_attention_mask
+                weights[weights > 1] = 1
+                attention_mask = weights
 
         # different to other models, Bart automatically creates decoder_input_ids from
         # input_ids if no decoder_input_ids are provided
@@ -2003,8 +2009,10 @@ class BartModelSource0(BartPretrainedModel):
                     output_hidden_states = output_hidden_states,
                     return_dict = return_dict,
                 )
-                #print("here")
+                # state method A
                 encoder_outputs["last_hidden_state"] = 0.5 * encoder_outputs["last_hidden_state"] + 0.5 * source_encoder_outputs["last_hidden_state"] 
+                # state method B
+
             else:
                 encoder_outputs = self.encoder(
                     input_ids=input_ids,
