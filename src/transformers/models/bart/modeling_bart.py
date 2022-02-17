@@ -2013,6 +2013,15 @@ class BartModelSource0(BartPretrainedModel):
             # weights[weights == 0] = 1
             # encoder_outputs["last_hidden_state"] = (repeated_input_mask * input_state + repeated_source_mask * source_state) / weights
 
+            # attention method A
+            #attention_mask = input_mask
+            # attention method B
+            #attention_mask = None
+            # attention method C
+            weights = input_mask + source_mask
+            weights[weights > 1] = 1
+            attention_mask = weights
+
         # If the user passed a tuple for encoder_outputs, we wrap it in a BaseModelOutput when return_dict=True
         elif return_dict and not isinstance(encoder_outputs, BaseModelOutput):
             encoder_outputs = BaseModelOutput(
@@ -2020,17 +2029,6 @@ class BartModelSource0(BartPretrainedModel):
                 hidden_states=encoder_outputs[1] if len(encoder_outputs) > 1 else None,
                 attentions=encoder_outputs[2] if len(encoder_outputs) > 2 else None,
             )
-
-        # attention method A
-        #attention_mask = input_mask
-        # attention method B
-        #attention_mask = None
-        # attention method C
-        print(attention_mask.shape)
-        print(encoder_outputs["last_hidden_state"].shape)
-        weights = input_mask + source_mask
-        weights[weights > 1] = 1
-        attention_mask = weights
 
         # decoder outputs consists of (dec_features, past_key_value, dec_hidden, dec_attn)
         decoder_outputs = self.decoder(
