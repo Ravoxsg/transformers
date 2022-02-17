@@ -1952,21 +1952,14 @@ class BartModelSource0(BartPretrainedModel):
         return_dict=None,
     ):
 
-        source_input_ids = None
+        source_ids = None
         if input_ids != None:
             if input_ids.shape[-1] > 1024:
                 thresh = int(input_ids.shape[1]/2)
-                source_input_ids = input_ids[:, thresh:]
-                source_attention_mask = attention_mask[:, thresh:]
+                source_ids = input_ids[:, thresh:]
+                source_mask = attention_mask[:, thresh:]
                 input_ids = input_ids[:, :thresh]
-                # attention method A
-                #attention_mask = attention_mask[:, :thresh]
-                # attention method B
-                #attention_mask = None
-                # attention method C
-                weights = attention_mask[:, :thresh] + source_attention_mask
-                weights[weights > 1] = 1
-                attention_mask = weights
+                input_mask = attention_mask[:, :thresh]
 
         # different to other models, Bart automatically creates decoder_input_ids from
         # input_ids if no decoder_input_ids are provided
@@ -1990,39 +1983,35 @@ class BartModelSource0(BartPretrainedModel):
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         if encoder_outputs is None:
-            if source_input_ids != None:
-                encoder_outputs = self.encoder(
-                    input_ids = input_ids,
-                    attention_mask = attention_mask,
-                    head_mask = head_mask,
-                    inputs_embeds = inputs_embeds,
-                    output_attentions = output_attentions,
-                    output_hidden_states = output_hidden_states,
-                    return_dict = return_dict,
-                )
-                source_encoder_outputs = self.encoder(
-                    input_ids = source_input_ids,
-                    attention_mask = source_attention_mask,
-                    head_mask = head_mask,
-                    inputs_embeds = inputs_embeds,
-                    output_attentions = output_attentions,
-                    output_hidden_states = output_hidden_states,
-                    return_dict = return_dict,
-                )
-                # state method A
-                encoder_outputs["last_hidden_state"] = 0.5 * encoder_outputs["last_hidden_state"] + 0.5 * source_encoder_outputs["last_hidden_state"] 
-                # state method B
+            encoder_outputs = self.encoder(
+                input_ids = input_ids,
+                attention_mask = input_mask,
+                head_mask = head_mask,
+                inputs_embeds = inputs_embeds,
+                output_attentions = output_attentions,
+                output_hidden_states = output_hidden_states,
+                return_dict = return_dict,
+            )
+            input_state = encoder_outputs["last_hidden_state"]
+            source_encoder_outputs = self.encoder(
+                input_ids = source_ids,
+                attention_mask = source_mask,
+                head_mask = head_mask,
+                inputs_embeds = inputs_embeds,
+                output_attentions = output_attentions,
+                output_hidden_states = output_hidden_states,
+                return_dict = return_dict,
+            )
+            source_state = source_encoder_outputs["last_hidden_state"] 
+            # state method A
+            encoder_outputs["last_hidden_state"] = 0.5 * input_state + 0.5 * source_state
+            # state method B
+            # repeated_input_mask = input_mask.unsqueeze(2).repeat(1, 1, input_state.shape[2])
+            # repeated_source_mask = source_mask.unsqueeze(2).repeat(1, 1, source_state.shape[2])
+            # weights = repeated_input_mask + repeated_source_mask
+            # weights[weights == 0] = 1
+            # encoder_outputs["last_hidden_state"] = (repeated_input_mask * input_state + repeated_source_mask * source_state) / weights
 
-            else:
-                encoder_outputs = self.encoder(
-                    input_ids=input_ids,
-                    attention_mask=attention_mask,
-                    head_mask=head_mask,
-                    inputs_embeds=inputs_embeds,
-                    output_attentions=output_attentions,
-                    output_hidden_states=output_hidden_states,
-                    return_dict=return_dict,
-                )
         # If the user passed a tuple for encoder_outputs, we wrap it in a BaseModelOutput when return_dict=True
         elif return_dict and not isinstance(encoder_outputs, BaseModelOutput):
             encoder_outputs = BaseModelOutput(
@@ -2030,6 +2019,15 @@ class BartModelSource0(BartPretrainedModel):
                 hidden_states=encoder_outputs[1] if len(encoder_outputs) > 1 else None,
                 attentions=encoder_outputs[2] if len(encoder_outputs) > 2 else None,
             )
+
+        # attention method A
+        #attention_mask = input_mask
+        # attention method B
+        #attention_mask = None
+        # attention method C
+        weights = input_mask + source_mask
+        weights[weights > 1] = 1
+        attention_mask = weights
 
         # decoder outputs consists of (dec_features, past_key_value, dec_hidden, dec_attn)
         decoder_outputs = self.decoder(
