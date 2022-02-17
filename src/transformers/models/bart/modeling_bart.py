@@ -1983,6 +1983,7 @@ class BartModelSource0(BartPretrainedModel):
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         if encoder_outputs is None:
+            print("encoder outputs is none")
             encoder_outputs = self.encoder(
                 input_ids = input_ids,
                 attention_mask = input_mask,
@@ -2025,6 +2026,8 @@ class BartModelSource0(BartPretrainedModel):
         # attention method B
         #attention_mask = None
         # attention method C
+        print(attention_mask.shape)
+        print(encoder_outputs["last_hidden_state"].shape)
         weights = input_mask + source_mask
         weights[weights > 1] = 1
         attention_mask = weights
