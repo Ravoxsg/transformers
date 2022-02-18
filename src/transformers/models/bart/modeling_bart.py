@@ -2590,10 +2590,10 @@ class BartModelSource4(BartPretrainedModel):
         if input_ids != None:
             if input_ids.shape[-1] > 1024:
                 thresh = int(input_ids.shape[1]/2)
-                source_input_ids = input_ids[:, thresh:]
-                source_attention_mask = attention_mask[:, thresh:]
+                source_ids = input_ids[:, thresh:]
+                source_mask = attention_mask[:, thresh:]
                 input_ids = input_ids[:, :thresh]
-                attention_mask = attention_mask[:, :thresh]
+                input_mask = attention_mask[:, :thresh]
                 #attention_mask = None
 
         # different to other models, Bart automatically creates decoder_input_ids from
@@ -2618,9 +2618,10 @@ class BartModelSource4(BartPretrainedModel):
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         if encoder_outputs is None:
+            ## hidden state
             encoder_outputs = self.encoder(
                     input_ids = input_ids,
-                    attention_mask = attention_mask,
+                    attention_mask = input_mask,
                     head_mask = head_mask,
                     inputs_embeds = inputs_embeds,
                     output_attentions = output_attentions,
@@ -2628,8 +2629,8 @@ class BartModelSource4(BartPretrainedModel):
                     return_dict = return_dict,
             )
             source_encoder_outputs = self.encoder(
-                    input_ids = source_input_ids,
-                    attention_mask = source_attention_mask,
+                    input_ids = source_ids,
+                    attention_mask = source_mask,
                     head_mask = head_mask,
                     inputs_embeds = inputs_embeds,
                     output_attentions = output_attentions,
@@ -2639,6 +2640,15 @@ class BartModelSource4(BartPretrainedModel):
             h = torch.cat((encoder_outputs["last_hidden_state"], source_encoder_outputs["last_hidden_state"]), -1)
             h = self.fusion_model(h)
             encoder_outputs["last_hidden_state"] = h
+
+            ## attention
+            # attention method A
+            #attention_mask = input_mask
+            # attention method B
+            #attention_mask = source_mask
+            # attention method C
+            attention_mask = None
+
         # If the user passed a tuple for encoder_outputs, we wrap it in a BaseModelOutput when return_dict=True
         elif return_dict and not isinstance(encoder_outputs, BaseModelOutput):
             encoder_outputs = BaseModelOutput(
