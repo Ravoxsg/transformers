@@ -1983,7 +1983,6 @@ class BartModelSource0(BartPretrainedModel):
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         if encoder_outputs is None:
-            print("encoder outputs is none")
             encoder_outputs = self.encoder(
                 input_ids = input_ids,
                 attention_mask = input_mask,
@@ -2007,20 +2006,22 @@ class BartModelSource0(BartPretrainedModel):
             # state method A
             encoder_outputs["last_hidden_state"] = 0.5 * input_state + 0.5 * source_state
             # state method B
-            # repeated_input_mask = input_mask.unsqueeze(2).repeat(1, 1, input_state.shape[2])
-            # repeated_source_mask = source_mask.unsqueeze(2).repeat(1, 1, source_state.shape[2])
-            # weights = repeated_input_mask + repeated_source_mask
-            # weights[weights == 0] = 1
-            # encoder_outputs["last_hidden_state"] = (repeated_input_mask * input_state + repeated_source_mask * source_state) / weights
+            #repeated_input_mask = input_mask.unsqueeze(2).repeat(1, 1, input_state.shape[2])
+            #repeated_source_mask = source_mask.unsqueeze(2).repeat(1, 1, source_state.shape[2])
+            #weights = repeated_input_mask + repeated_source_mask
+            #weights[weights == 0] = 1
+            #encoder_outputs["last_hidden_state"] = (repeated_input_mask * input_state + repeated_source_mask * source_state) / weights
 
             # attention method A
             #attention_mask = input_mask
             # attention method B
-            #attention_mask = None
+            #attention_mask = source_mask
             # attention method C
-            weights = input_mask + source_mask
-            weights[weights > 1] = 1
-            attention_mask = weights
+            attention_mask = None
+            # attention method D
+            #weights = input_mask + source_mask
+            #weights[weights > 1] = 1
+            #attention_mask = weights
 
         # If the user passed a tuple for encoder_outputs, we wrap it in a BaseModelOutput when return_dict=True
         elif return_dict and not isinstance(encoder_outputs, BaseModelOutput):

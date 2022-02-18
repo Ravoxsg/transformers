@@ -537,11 +537,13 @@ class GenerationMixin:
             # attention method A
             #model_kwargs["attention_mask"] = input_mask
             # attention method B
-            #model_kwargs["attention_mask"] = None
+            #model_kwargs["attention_mask"] = source_mask
             # attention method C
-            weights = input_mask + source_mask
-            weights[weights > 1] = 1
-            model_kwargs["attention_mask"] = weights 
+            model_kwargs["attention_mask"] = None
+            # attention method D
+            #weights = input_mask + source_mask
+            #weights[weights > 1] = 1
+            #model_kwargs["attention_mask"] = weights 
 
             #### Source3
             ## encode the source
