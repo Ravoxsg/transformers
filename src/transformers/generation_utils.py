@@ -599,7 +599,11 @@ class GenerationMixin:
             # attention method B
             #model_kwargs["attention_mask"] = source_mask
             # attention method C
-            model_kwargs["attention_mask"] = None
+            #model_kwargs["attention_mask"] = None
+            # attention method D
+            weights = input_mask + source_mask
+            weights[weights > 1] = 1
+            model_kwargs["attention_mask"] = weights
         else:
             model_kwargs["encoder_outputs"]: ModelOutput = encoder(**encoder_kwargs)
 

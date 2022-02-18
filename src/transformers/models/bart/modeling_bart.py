@@ -2533,7 +2533,9 @@ class BartModelSource4(BartPretrainedModel):
 
         self.encoder = BartEncoder(config, self.shared)
         self.fusion_model = nn.Sequential(
-            nn.Linear(2 * config.d_model, config.d_model)
+            nn.Linear(2 * config.d_model, config.d_model),
+            nn.ReLU(),
+            nn.Linear(config.d_model, config.d_model)
         )
         self.decoder = BartDecoder(config, self.shared)
 
@@ -2647,7 +2649,11 @@ class BartModelSource4(BartPretrainedModel):
             # attention method B
             #attention_mask = source_mask
             # attention method C
-            attention_mask = None
+            #attention_mask = None
+            # attention method D
+            weights = source_mask + input_mask
+            weights[weights > 1] = 1
+            attention_mask = weights
 
         # If the user passed a tuple for encoder_outputs, we wrap it in a BaseModelOutput when return_dict=True
         elif return_dict and not isinstance(encoder_outputs, BaseModelOutput):
