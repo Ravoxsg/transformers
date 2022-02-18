@@ -583,7 +583,7 @@ class GenerationMixin:
             weights[weights > 1] = 1
             model_kwargs["attention_mask"] = weights
 
-            #### Source3
+            #### Source3a
 
             ## hidden state 
             # encode the source
