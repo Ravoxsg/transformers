@@ -596,9 +596,11 @@ class GenerationMixin:
             encoder_kwargs["input_ids"] = input_ids
             encoder_kwargs["attention_mask"] = input_mask
             encoder_kwargs["source_out"] = source_out
+            encoder_kwargs["source_mask"] = source_mask
             input_outs = encoder(**encoder_kwargs)
             # update the model kwargs
             model_kwargs["encoder_outputs"]: ModelOutput = input_outs
+            model_kwargs["attention_mask"] = input_mask
             model_kwargs["source_out"] = source_out
             model_kwargs["source_mask"] = source_mask
         else:
@@ -670,8 +672,12 @@ class GenerationMixin:
             token_type_ids = model_kwargs["token_type_ids"]
             model_kwargs["token_type_ids"] = token_type_ids.index_select(0, expanded_return_idx)
 
+        print("in", attention_mask.shape)
         if attention_mask is not None:
             model_kwargs["attention_mask"] = attention_mask.index_select(0, expanded_return_idx)
+            if "source_mask" in model_kwargs.keys():
+                model_kwargs["source_mask"] = model_kwargs["source_mask"].index_select(0, expanded_return_idx)
+        print("out", model_kwargs["attention_mask"].shape)
 
         if is_encoder_decoder:
             if encoder_outputs is None:
@@ -1337,7 +1343,8 @@ class GenerationMixin:
             input_ids, model_kwargs = self._expand_inputs_for_generation(
                 input_ids, expand_size=num_beams, is_encoder_decoder=self.config.is_encoder_decoder, **model_kwargs
             )
-            # 12. run beam search
+            # 12. run beam searc
+            print(model_kwargs["attention_mask"].shape)
             return self.beam_search(
                 input_ids,
                 beam_scorer,
