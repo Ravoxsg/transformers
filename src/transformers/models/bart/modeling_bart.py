@@ -371,6 +371,7 @@ class BartEncoderLayerSource3a(nn.Module):
         hidden_states: torch.Tensor,
         attention_mask: torch.Tensor,
         source_out: torch.Tensor,
+        source_mask: torch.Tensor,
         layer_head_mask: torch.Tensor,
         output_attentions: bool = False,
     ):
@@ -396,7 +397,7 @@ class BartEncoderLayerSource3a(nn.Module):
             hidden_states2, attn_weights2, _ = self.source_attn(
                 hidden_states=hidden_states,
                 key_value_states=source_out,
-                attention_mask=attention_mask,
+                attention_mask=source_mask,
                 layer_head_mask=layer_head_mask,
                 output_attentions=output_attentions,
             )
@@ -613,6 +614,7 @@ class BartDecoderLayerSource3a(nn.Module):
         hidden_states: torch.Tensor,
         attention_mask: Optional[torch.Tensor] = None,
         source_out: Optional[torch.Tensor] = None,
+        source_mask: Optional[torch.Tensor] = None,
         encoder_hidden_states: Optional[torch.Tensor] = None,
         encoder_attention_mask: Optional[torch.Tensor] = None,
         layer_head_mask: Optional[torch.Tensor] = None,
@@ -675,7 +677,7 @@ class BartDecoderLayerSource3a(nn.Module):
             hidden_states2, cross_attn_weights2, cross_attn_present_key_value2 = self.source_attn(
                 hidden_states=hidden_states,
                 key_value_states=source_out,
-                attention_mask=encoder_attention_mask,
+                attention_mask=source_mask,
                 layer_head_mask=cross_attn_layer_head_mask,
                 past_key_value=cross_attn_past_key_value,
                 output_attentions=output_attentions,
@@ -1159,6 +1161,7 @@ class BartEncoderSource3a(BartPretrainedModel):
         input_ids=None,
         attention_mask=None,
         source_out=None,
+        source_mask=None,
         head_mask=None,
         inputs_embeds=None,
         output_attentions=None,
@@ -1269,6 +1272,7 @@ class BartEncoderSource3a(BartPretrainedModel):
                         hidden_states,
                         attention_mask,
                         source_out,
+                        source_mask,
                         layer_head_mask=(head_mask[idx] if head_mask is not None else None),
                         output_attentions=output_attentions,
                     )
@@ -1621,6 +1625,7 @@ class BartDecoderSource3a(BartPretrainedModel):
         input_ids=None,
         attention_mask=None,
         source_out=None,
+        source_mask=None,
         encoder_hidden_states=None,
         encoder_attention_mask=None,
         head_mask=None,
@@ -1728,6 +1733,7 @@ class BartDecoderSource3a(BartPretrainedModel):
                     hidden_states,
                     attention_mask=attention_mask,
                     source_out=source_out,
+                    source_mask=source_mask,
                     encoder_hidden_states=encoder_hidden_states,
                     encoder_attention_mask=encoder_attention_mask,
                     layer_head_mask=(head_mask[idx] if head_mask is not None else None),
@@ -2272,6 +2278,7 @@ class BartModelSource3a(BartPretrainedModel):
         input_ids=None,
         attention_mask=None,
         source_out=None,
+        source_mask=None,
         decoder_input_ids=None,
         decoder_attention_mask=None,
         head_mask=None,
@@ -2289,15 +2296,16 @@ class BartModelSource3a(BartPretrainedModel):
 
         if source_out == None:
             thresh = int(input_ids.shape[1]/2)
-            source_input_ids = input_ids[:, thresh:]
-            source_attention_mask = attention_mask[:, thresh:]
+            source_ids = input_ids[:, thresh:]
+            source_mask = attention_mask[:, thresh:]
             input_ids = input_ids[:, :thresh]
             attention_mask = attention_mask[:, :thresh]
             # source encoding
             source_encoder_outputs = self.encoder(
-                input_ids=source_input_ids,
-                attention_mask=source_attention_mask,
+                input_ids=source_ids,
+                attention_mask=source_mask,
                 source_out = None,
+                source_mask = None,
                 head_mask=head_mask,
                 inputs_embeds=inputs_embeds,
                 output_attentions=output_attentions,
@@ -2332,6 +2340,7 @@ class BartModelSource3a(BartPretrainedModel):
                 input_ids=input_ids,
                 attention_mask=attention_mask,
                 source_out = source_out,
+                source_mask = source_mask,
                 head_mask=head_mask,
                 inputs_embeds=inputs_embeds,
                 output_attentions=output_attentions,
@@ -2351,6 +2360,7 @@ class BartModelSource3a(BartPretrainedModel):
             input_ids=decoder_input_ids,
             attention_mask=decoder_attention_mask,
             source_out=source_out,
+            source_mask=source_mask,
             encoder_hidden_states=encoder_outputs[0],
             encoder_attention_mask=attention_mask,
             head_mask=decoder_head_mask,
@@ -2915,6 +2925,7 @@ class BartForConditionalGenerationSource3a(BartPretrainedModel):
         input_ids=None,
         attention_mask=None,
         source_out=None,
+        source_mask=None,
         decoder_input_ids=None,
         decoder_attention_mask=None,
         head_mask=None,
@@ -2950,6 +2961,7 @@ class BartForConditionalGenerationSource3a(BartPretrainedModel):
             input_ids,
             attention_mask=attention_mask,
             source_out=source_out,
+            source_mask=source_mask,
             decoder_input_ids=decoder_input_ids,
             encoder_outputs=encoder_outputs,
             decoder_attention_mask=decoder_attention_mask,
@@ -2991,6 +3003,7 @@ class BartForConditionalGenerationSource3a(BartPretrainedModel):
         self,
         decoder_input_ids,
         source_out=None,
+        source_mask=None,
         past=None,
         attention_mask=None,
         head_mask=None,
@@ -3007,6 +3020,7 @@ class BartForConditionalGenerationSource3a(BartPretrainedModel):
         return {
             "input_ids": None,  # encoder_outputs is defined. input_ids not needed
             "source_out": source_out,
+            "source_mask": source_mask,
             "encoder_outputs": encoder_outputs,
             "past_key_values": past,
             "decoder_input_ids": decoder_input_ids,
