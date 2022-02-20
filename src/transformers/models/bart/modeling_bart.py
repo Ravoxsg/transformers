@@ -3190,6 +3190,11 @@ class BartForConditionalGenerationSource3b(BartPretrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+        print("config")
+        print(config)
+        print(type(config))
+        raise Exception 
+
     def get_encoder(self):
         return self.model.get_encoder()
 
