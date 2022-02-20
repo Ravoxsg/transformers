@@ -666,7 +666,6 @@ class BartDecoderLayerSource3a(nn.Module):
             hidden_states1 = nn.functional.dropout(hidden_states1, p=self.dropout, training=self.training)
             hidden_states2 = nn.functional.dropout(hidden_states2, p=self.dropout, training=self.training)
             ratios = self.get_ratio()
-            print("ratios", ratios)
             hidden_states = residual + ratios[0] * hidden_states1 + ratios[1] * hidden_states2
             hidden_states = self.encoder_attn_layer_norm(hidden_states)
 
