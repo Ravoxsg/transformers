@@ -338,7 +338,7 @@ class BartEncoderLayer(nn.Module):
         return outputs
 
 class BartEncoderLayerSource3a(nn.Module):
-    def __init__(self, config: BartConfig):
+    def __init__(self, config: BartConfig, args):
         super().__init__()
         self.embed_dim = config.d_model
         self.self_attn = BartAttention(
@@ -352,11 +352,11 @@ class BartEncoderLayerSource3a(nn.Module):
             num_heads=config.encoder_attention_heads,
             dropout=config.attention_dropout,
         )
-        self.source_encoder_dropout = True
-        self.source_encoder_dropout_ratio = 0.25
-        self.source_encoder_mixup = False
-        self.encoder_ratio = 0.5
-        self.source_encoder_ratio = 0.5
+        self.source_encoder_dropout = args.source_encoder_dropout # True
+        self.source_encoder_dropout_ratio = args.source_encoder_dropout_ratio # 0.25
+        self.source_encoder_mixup = args.source_encoder_mixup # False
+        self.encoder_ratio = args.encoder_ratio # 0.5
+        self.source_encoder_ratio = args.source_encoder_ratio # 0.5
 
         self.self_attn_layer_norm = nn.LayerNorm(self.embed_dim)
         self.dropout = config.dropout
@@ -570,7 +570,7 @@ class BartDecoderLayer(nn.Module):
         return outputs
 
 class BartDecoderLayerSource3a(nn.Module):
-    def __init__(self, config: BartConfig):
+    def __init__(self, config: BartConfig, args):
         super().__init__()
         self.embed_dim = config.d_model
 
@@ -586,11 +586,11 @@ class BartDecoderLayerSource3a(nn.Module):
             num_heads=config.encoder_attention_heads,
             dropout=config.attention_dropout,
         )
-        self.source_encoder_dropout = True
-        self.source_encoder_dropout_ratio = 0.25
-        self.source_encoder_mixup = False
-        self.encoder_ratio = 0.5
-        self.source_encoder_ratio = 0.5
+        self.source_encoder_dropout = args.source_encoder_dropout # True
+        self.source_encoder_dropout_ratio = args.source_encoder_dropout_ratio # 0.25
+        self.source_encoder_mixup = args.source_encoder_mixup # False
+        self.encoder_ratio = args.encoder_ratio # 0.5
+        self.source_encoder_ratio = args.source_encoder_ratio # 0.5
 
         self.dropout = config.dropout
         self.activation_fn = ACT2FN[config.activation_function]
@@ -1105,7 +1105,7 @@ class BartEncoderSource3a(BartPretrainedModel):
         embed_tokens (nn.Embedding): output embedding
     """
 
-    def __init__(self, config: BartConfig, embed_tokens: Optional[nn.Embedding] = None):
+    def __init__(self, config: BartConfig, args, embed_tokens: Optional[nn.Embedding] = None):
         super().__init__(config)
 
         self.dropout = config.dropout
@@ -1116,6 +1116,8 @@ class BartEncoderSource3a(BartPretrainedModel):
         self.max_source_positions = config.max_position_embeddings
         self.embed_scale = math.sqrt(embed_dim) if config.scale_embedding else 1.0
 
+        self.args = args
+
         if embed_tokens is not None:
             self.embed_tokens = embed_tokens
         else:
@@ -1125,7 +1127,7 @@ class BartEncoderSource3a(BartPretrainedModel):
             config.max_position_embeddings,
             embed_dim,
         )
-        self.layers = nn.ModuleList([BartEncoderLayerSource3a(config) for _ in range(config.encoder_layers)])
+        self.layers = nn.ModuleList([BartEncoderLayerSource3a(config, args) for _ in range(config.encoder_layers)])
         self.layernorm_embedding = nn.LayerNorm(embed_dim)
 
         self.gradient_checkpointing = False
@@ -1556,13 +1558,15 @@ class BartDecoderSource3a(BartPretrainedModel):
         embed_tokens (nn.Embedding): output embedding
     """
 
-    def __init__(self, config: BartConfig, embed_tokens: Optional[nn.Embedding] = None):
+    def __init__(self, config: BartConfig, args, embed_tokens: Optional[nn.Embedding] = None):
         super().__init__(config)
         self.dropout = config.dropout
         self.layerdrop = config.decoder_layerdrop
         self.padding_idx = config.pad_token_id
         self.max_target_positions = config.max_position_embeddings
         self.embed_scale = math.sqrt(config.d_model) if config.scale_embedding else 1.0
+
+        self.args = args
 
         if embed_tokens is not None:
             self.embed_tokens = embed_tokens
@@ -1573,7 +1577,7 @@ class BartDecoderSource3a(BartPretrainedModel):
             config.max_position_embeddings,
             config.d_model,
         )
-        self.layers = nn.ModuleList([BartDecoderLayerSource3a(config) for _ in range(config.decoder_layers)])
+        self.layers = nn.ModuleList([BartDecoderLayerSource3a(config, args) for _ in range(config.decoder_layers)])
         self.layernorm_embedding = nn.LayerNorm(config.d_model)
 
         self.gradient_checkpointing = False
@@ -2223,14 +2227,15 @@ class BartModelSource2b(BartPretrainedModel):
         )
 
 class BartModelSource3a(BartPretrainedModel):
-    def __init__(self, config: BartConfig):
+    def __init__(self, config: BartConfig, args):
         super().__init__(config)
 
         padding_idx, vocab_size = config.pad_token_id, config.vocab_size
+        self.args = args
         self.shared = nn.Embedding(vocab_size, config.d_model, padding_idx)
 
-        self.encoder = BartEncoderSource3a(config, self.shared)
-        self.decoder = BartDecoderSource3a(config, self.shared)
+        self.encoder = BartEncoderSource3a(config, args, self.shared)
+        self.decoder = BartDecoderSource3a(config, args, self.shared)
 
         # Initialize weights and apply final processing
         self.post_init()
@@ -2383,7 +2388,7 @@ class BartModelSource3b(BartPretrainedModel):
         self.shared = nn.Embedding(vocab_size, config.d_model, padding_idx)
 
         self.encoder = BartEncoder(config, self.shared)
-        self.decoder = BartDecoderSource3a(config, self.shared)
+        self.decoder = BartDecoderSource3a(config, args, self.shared)
 
         # Initialize weights and apply final processing
         self.post_init()
@@ -3014,9 +3019,10 @@ class BartForConditionalGenerationSource3a(BartPretrainedModel):
     base_model_prefix = "model"
     _keys_to_ignore_on_load_missing = [r"final_logits_bias", r"lm_head\.weight"]
 
-    def __init__(self, config: BartConfig):
+    def __init__(self, config: BartConfig, args):
         super().__init__(config)
-        self.model = BartModelSource3a(config)
+        self.args = args
+        self.model = BartModelSource3a(config, args)
         self.register_buffer("final_logits_bias", torch.zeros((1, self.model.shared.num_embeddings)))
         self.lm_head = nn.Linear(config.d_model, self.model.shared.num_embeddings, bias=False)
 
