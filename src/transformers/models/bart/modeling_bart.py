@@ -2374,8 +2374,10 @@ class BartModelSource3a(BartPretrainedModel):
         )
 
 class BartModelSource3b(BartPretrainedModel):
-    def __init__(self, config: BartConfig):
+    def __init__(self, config: BartConfig, args):
         super().__init__(config)
+
+        self.args = args
 
         padding_idx, vocab_size = config.pad_token_id, config.vocab_size
         self.shared = nn.Embedding(vocab_size, config.d_model, padding_idx)
@@ -3181,19 +3183,15 @@ class BartForConditionalGenerationSource3b(BartPretrainedModel):
     base_model_prefix = "model"
     _keys_to_ignore_on_load_missing = [r"final_logits_bias", r"lm_head\.weight"]
 
-    def __init__(self, config: BartConfig):
+    def __init__(self, config: BartConfig, args):
         super().__init__(config)
-        self.model = BartModelSource3b(config)
+        self.args = args
+        self.model = BartModelSource3b(config, args)
         self.register_buffer("final_logits_bias", torch.zeros((1, self.model.shared.num_embeddings)))
         self.lm_head = nn.Linear(config.d_model, self.model.shared.num_embeddings, bias=False)
 
         # Initialize weights and apply final processing
         self.post_init()
-
-        print("config")
-        print(config)
-        print(type(config))
-        raise Exception 
 
     def get_encoder(self):
         return self.model.get_encoder()
