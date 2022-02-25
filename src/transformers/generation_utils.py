@@ -608,6 +608,24 @@ class GenerationMixin:
 
             ## hidden state
             # encode the source
+            #encoder_kwargs["input_ids"] = source_ids
+            #encoder_kwargs["attention_mask"] = source_mask
+            #source_outs = source_encoder(**encoder_kwargs)
+            #source_out = source_outs["last_hidden_state"]
+            # encode the candidates
+            #encoder_kwargs["input_ids"] = input_ids
+            #encoder_kwargs["attention_mask"] = input_mask
+            #input_outs = encoder(**encoder_kwargs)
+            # update the model kwargs
+            #model_kwargs["encoder_outputs"]: ModelOutput = input_outs
+            #model_kwargs["attention_mask"] = input_mask
+            #model_kwargs["source_out"] = source_out
+            #model_kwargs["source_mask"] = source_mask
+
+            ### Source5
+
+            ## hidden state
+            # encode the source
             encoder_kwargs["input_ids"] = source_ids
             encoder_kwargs["attention_mask"] = source_mask
             encoder_kwargs["candidates"] = False
