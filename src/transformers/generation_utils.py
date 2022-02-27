@@ -622,7 +622,30 @@ class GenerationMixin:
             #model_kwargs["source_out"] = source_out
             #model_kwargs["source_mask"] = source_mask
 
-            ### Source5
+            ### Source5a
+
+            ## hidden state
+            # encode the source
+            #encoder_kwargs["input_ids"] = source_ids
+            #encoder_kwargs["attention_mask"] = source_mask
+            #encoder_kwargs["candidates"] = False
+            #source_outs = source_encoder(**encoder_kwargs)
+            #source_out = source_outs["last_hidden_state"]
+            # encode the candidates
+            #encoder_kwargs["input_ids"] = input_ids
+            #encoder_kwargs["attention_mask"] = input_mask
+            #encoder_kwargs["candidates"] = True
+            #input_outs = encoder(**encoder_kwargs)
+            # update the model kwargs
+            #encoder_output = torch.cat((source_out[:, 0:1, :], input_outs["last_hidden_state"]), dim = 1)
+            #input_outs["last_hidden_state"] = encoder_output
+            #input_mask = torch.ones((encoder_output.shape[0], encoder_output.shape[1])).to(encoder_output.device)
+            #model_kwargs["encoder_outputs"]: ModelOutput = input_outs
+            #model_kwargs["attention_mask"] = input_mask
+            #model_kwargs["source_out"] = source_out
+            #model_kwargs["source_mask"] = source_mask
+
+            ### Source5b
 
             ## hidden state
             # encode the source
@@ -637,9 +660,9 @@ class GenerationMixin:
             encoder_kwargs["candidates"] = True
             input_outs = encoder(**encoder_kwargs)
             # update the model kwargs
-            encoder_output = torch.cat((source_out[:, 0:1, :], input_outs["last_hidden_state"]), dim = 1)
+            encoder_output = torch.cat((source_out[:, :, :], input_outs["last_hidden_state"]), dim = 1)
             input_outs["last_hidden_state"] = encoder_output
-            input_mask = torch.ones((encoder_output.shape[0], encoder_output.shape[1])).to(encoder_output.device)
+            input_mask = torch.cat((source_mask, input_mask), dim = 1)
             model_kwargs["encoder_outputs"]: ModelOutput = input_outs
             model_kwargs["attention_mask"] = input_mask
             model_kwargs["source_out"] = source_out
